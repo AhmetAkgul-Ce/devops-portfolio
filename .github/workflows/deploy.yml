@@ -1,0 +1,34 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Copy files to EC2
+      uses: appleboy/scp-action@master
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USER }}
+        key: ${{ secrets.EC2_KEY }}
+        source: "app.js,package.json,package-lock.json,Dockerfile"
+        target: "/home/ubuntu/web-app"
+
+    - name: Rebuild & Restart Docker
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USER }}
+        key: ${{ secrets.EC2_KEY }}
+        script: |
+          cd ~/web-app
+          sudo docker build -t devops-portfolio-app .
+          sudo docker stop portfolio-app || true
+          sudo docker rm portfolio-app || true
+          sudo docker run -d -p 80:80 --name portfolio-app devops-portfolio-app
