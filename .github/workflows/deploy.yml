@@ -11,13 +11,24 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
+    - name: Build Docker Image
+      run: docker build -t devops-portfolio-app .
+
+    - name: Security Scan with Trivy
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: 'devops-portfolio-app'
+        format: 'table'
+        exit-code: '0'
+        severity: 'CRITICAL,HIGH'
+
     - name: Copy files to EC2
       uses: appleboy/scp-action@master
       with:
         host: ${{ secrets.EC2_HOST }}
         username: ${{ secrets.EC2_USER }}
         key: ${{ secrets.EC2_KEY }}
-        source: "app.js,package.json,package-lock.json,Dockerfile"
+        source: "app.js,package.json,package-lock.json,Dockerfile,index.html"
         target: "/home/ubuntu/web-app"
 
     - name: Rebuild & Restart Docker
